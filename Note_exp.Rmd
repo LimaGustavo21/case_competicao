@@ -1,0 +1,222 @@
+---
+title: "Exploratório Indicadores"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+```{r}
+#Bibliotecas
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+```
+
+## Leitura Bases
+
+```{r}
+
+country_series <- read.csv('WDIcountry-series.csv', header = TRUE, stringsAsFactors = FALSE)
+
+country <- read.csv('WDICountry.csv', header = TRUE, stringsAsFactors = FALSE)
+
+csv <- read.csv('WDICSV.csv', header = TRUE, stringsAsFactors = FALSE)
+
+footnote <- read.csv('WDIfootnote.csv', header = TRUE, stringsAsFactors = FALSE)
+
+series_time <- read.csv('WDIseries-time.csv', header = TRUE, stringsAsFactors = FALSE)
+
+series <- read.csv('WDIseries.csv', header = TRUE, stringsAsFactors = FALSE)
+```
+
+
+### Base - Country_series
+
+<br>
+
+#### Relaciona países e séries (indicadores disponíveis por país)
+
+```{r}
+head(country_series)
+```
+
+
+### Base - Country
+
+<br>
+
+#### Lista de países e regiões, com metadados (códigos ISO, grupos de renda, região, etc.)
+
+
+```{r}
+head(country_series)
+```
+
+### Base - Series
+
+<br>
+
+#### Lista de indicadores, com nomes, unidades de medida e descrições
+
+```{r}
+head(series)
+```
+### Base - Series-time
+
+<br>
+
+#### Dados de tempo por indicador, geralmente organizados em painel (country × year × value)
+
+```{r}
+head(series_time)
+```
+### Base - Footnote
+
+<br>
+
+#### Notas de rodapé explicando exceções e observações nos indicadores
+
+```{r}
+head(footnote)
+```
+
+### Base - WDICSV
+
+<br>
+
+#### A base principal de valores (indicador × país × ano × valor)
+
+```{r}
+head(csv)
+```
+```{r}
+names(series)
+```
+
+--------------------------------------------------------------------------------------------
+
+## Explorando indicadores relacionados à saúde
+
+```{r}
+  series %>%
+  group_by(Topic) %>%
+  summarise(total_indicators = n()) %>%
+  arrange(desc(total_indicators))
+
+```
+
+### Identificando os tópicos que contém "Health" no nome
+
+```{r}
+series %>%
+  group_by(Topic) %>%
+  summarise(total_indicators = n()) %>%
+  arrange(desc(total_indicators)) %>%
+  filter(grepl("health", Topic, ignore.case = TRUE))
+```
+
+#### Análise - "Health: Population: Structure"
+
+```{r}
+series %>%
+  filter(Topic == "Health: Population: Structure") %>%
+  select(Indicator.Name, everything())
+```
+#### Análise - "Health: Mortality"
+
+```{r}
+series %>%
+  filter(Topic == "Health: Mortality") %>%
+  select(Indicator.Name, everything())
+```
+#### Análise - "Health: Risk factors"
+
+```{r}
+series %>%
+  filter(Topic == "Health: Risk factors") %>%
+  select(Indicator.Name, everything())
+```
+
+
+
+#### Análise - "Health: Nutrition"
+
+```{r}
+series %>%
+  filter(Topic == "Health: Nutrition") %>%
+  select(Indicator.Name, everything())
+```
+
+
+
+#### Análise - "Health: Disease prevention"
+
+```{r}
+series %>%
+  filter(Topic == "Health: Disease prevention") %>%
+  select(Indicator.Name, everything())
+```
+
+
+```{r}
+targets <- c(
+  "Population ages 0-14 (% of total population)",
+  "Population ages 65 and above (% of total population)",
+  "Mortality rate, under-5 (per 1,000 live births)",
+  "Life expectancy at birth, total (years)",
+  "Prevalence of anemia among children (% of children ages 6-59 months)",
+  "Prevalence of overweight, weight for height (% of children under 5)",
+  "Prevalence of stunting, height for age (% of children under 5)",
+  "Immunization, DPT (% of children ages 12-23 months)",
+  "People using safely managed drinking water services (% of population)",
+  "Prevalence of HIV, total (% of population ages 15-49)"
+)
+
+series %>%
+  filter(`Indicator.Name` %in% targets)
+```
+| Indicator.Name | Description |
+|----------------|------------|
+| Population ages 0-14 (% of total population) | Proporção da população com idades entre 0 e 14 anos em relação ao total da população. Indica a estrutura etária jovem do país/região. |
+| Population ages 65 and above (% of total population) | Proporção da população com 65 anos ou mais em relação ao total. Indica o envelhecimento da população. |
+| Mortality rate, under-5 (per 1,000 live births) | Número de crianças que morrem antes de completar 5 anos por mil nascidos vivos. É um indicador chave de saúde infantil e desenvolvimento social. |
+| Life expectancy at birth, total (years) | Expectativa de vida ao nascer, considerando toda a população. Indica a saúde geral e condições de vida da população. |
+| Prevalence of anemia among children (% of children ages 6-59 months) | Percentual de crianças de 6 a 59 meses que apresentam anemia. Reflete problemas nutricionais e de saúde infantil. |
+| Prevalence of overweight, weight for height (% of children under 5) | Percentual de crianças menores de 5 anos com excesso de peso em relação à altura. Indicador de obesidade infantil e padrões nutricionais. |
+| Prevalence of stunting, height for age (% of children under 5) | Percentual de crianças menores de 5 anos com baixa estatura para a idade (stunting). Indica desnutrição crônica. |
+| Immunization, DPT (% of children ages 12-23 months) | Percentual de crianças de 12 a 23 meses vacinadas contra Difteria, Tétano e Coqueluche. Mede cobertura de vacinação infantil. |
+| People using safely managed drinking water services (% of population) | Percentual da população com acesso a serviços de água potável gerenciados de forma segura. Indicador de saneamento básico e risco sanitário. |
+| Prevalence of HIV, total (% of population ages 15-49) | Percentual da população de 15 a 49 anos vivendo com HIV. Indica carga da doença e riscos de saúde pública. |
+
+
+```{r}
+csv %>%
+  filter(grepl("SH.DYN.MORT", Indicator.Code))
+```
+
+
+```{r}
+csv_filtered <- csv %>%
+  filter(grepl("SH.DYN.MORT", Indicator.Code))
+
+# Pivotar para formato longo apenas com anos >= 2010
+csv_long <- csv_filtered %>%
+  pivot_longer(
+    cols = starts_with("X"),        # Seleciona todas as colunas de anos
+    names_to = "Year",
+    values_to = "Value"
+  ) %>%
+  mutate(Year = as.integer(sub("X", "", Year))) %>%  # Remove o "X" e transforma em número
+  filter(Year >= 2010)                               # Filtra anos a partir de 2010
+
+# Criar o boxplot
+ggplot(csv_long, aes(x = factor(Year), y = Value)) +  # factor para organizar no eixo X
+  geom_boxplot(fill = "skyblue", color = "darkblue") +
+  labs(
+    title = "Distribuição dos Indicadores SH.DYN.MORT por Ano",
+    x = "Ano",
+    y = "Valor do Indicador"
+  ) +
+  theme_minimal()
+```
+
