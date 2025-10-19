@@ -196,27 +196,134 @@ csv %>%
 
 
 ```{r}
-csv_filtered <- csv %>%
-  filter(grepl("SH.DYN.MORT", Indicator.Code))
+missing_by_indicator <- function(indicator_code, start_year = 2010) {
+  
+  # Filtrar pelo indicador
+  csv_filtered <- csv %>%
+    filter(Indicator.Code == indicator_code) 
+  
+  # Pivotar para formato longo e filtrar anos
+  csv_long <- csv_filtered %>%
+    pivot_longer(
+      cols = starts_with("X"),
+      names_to = "Year",
+      values_to = "Value"
+    ) %>%
+    mutate(Year = as.integer(sub("X", "", Year))) %>%
+    filter(Year >= start_year)
+  
+  # Calcular % de missing por ano
+  missing_percent <- csv_long %>%
+    group_by(Year) %>%
+    summarise(
+      missing_count = sum(is.na(Value)),
+      total_count = n(),
+      missing_percent = (missing_count / total_count) * 100
+    )
+  
+  return(missing_percent)
+}
 
-# Pivotar para formato longo apenas com anos >= 2010
-csv_long <- csv_filtered %>%
+
+boxplot_indicator <- function(indicator_code, start_year = 2010) {
+  
+  # Filtrar pelo indicador
+  csv_filtered <- csv %>%
+    filter(Indicator.Code == indicator_code) 
+  
+  # Pivotar para formato longo e filtrar anos
+  csv_long <- csv_filtered %>%
+    pivot_longer(
+      cols = starts_with("X"),
+      names_to = "Year",
+      values_to = "Value"
+    ) %>%
+    mutate(Year = as.integer(sub("X", "", Year))) %>%
+    filter(Year >= start_year)
+  
+  # Criar o boxplot
+  p <- ggplot(csv_long, aes(x = factor(Year), y = Value)) +
+    geom_boxplot(fill = "skyblue", color = "darkblue") +
+    labs(
+      title = paste("Distribuição do Indicador", indicator_code, "por Ano"),
+      x = "Ano",
+      y = "Valor do Indicador"
+    ) +
+    theme_minimal()
+  
+  return(p)
+}
+
+
+```
+
+#### Exploratório Variável - Expectativa de Vida
+
+```{r}
+missing_by_indicator("SP.DYN.LE00.IN", 2010)
+```
+```{r}
+boxplot_indicator("SP.DYN.LE00.IN", 2010)
+```
+
+
+
+#### Exploratório Variável - Mortalidade infantil "SH.DYN.MORT"
+
+```{r}
+missing_by_indicator("SH.DYN.MORT", 2010)
+```
+```{r}
+boxplot_indicator("SH.DYN.MORT", 2010)
+```
+```{r}
+csv %>%
+  filter(Indicator.Code == "SH.DYN.MORT") %>%  # Filtra exatamente pelo código
   pivot_longer(
-    cols = starts_with("X"),        # Seleciona todas as colunas de anos
+    cols = starts_with("X"),      # Transformar anos em formato longo
     names_to = "Year",
     values_to = "Value"
   ) %>%
-  mutate(Year = as.integer(sub("X", "", Year))) %>%  # Remove o "X" e transforma em número
-  filter(Year >= 2010)                               # Filtra anos a partir de 2010
+  filter(is.na(Value), Year == "X2022")
+```
+#### Exploratório Variável - % de pessoas com saneamento basico  "SH.STA.BASS.ZS"
 
-# Criar o boxplot
-ggplot(csv_long, aes(x = factor(Year), y = Value)) +  # factor para organizar no eixo X
-  geom_boxplot(fill = "skyblue", color = "darkblue") +
-  labs(
-    title = "Distribuição dos Indicadores SH.DYN.MORT por Ano",
-    x = "Ano",
-    y = "Valor do Indicador"
-  ) +
-  theme_minimal()
+
+```{r}
+missing_by_indicator("SH.STA.BASS.ZS", 2010)
+```
+```{r}
+boxplot_indicator("SH.STA.BASS.ZS", 2010)
+```
+```{r}
+csv %>%
+  filter(Indicator.Code == "SH.STA.BASS.ZS") %>%  # Filtra exatamente pelo código
+  pivot_longer(
+    cols = starts_with("X"),      # Transformar anos em formato longo
+    names_to = "Year",
+    values_to = "Value"
+  ) %>%
+  filter(is.na(Value), Year == "X2022")
+```
+#### Exploratório Variável - Percentual da população com acesso a água potável segura  "SH.H2O.BASW.ZS"
+
+
+```{r}
+missing_by_indicator("SH.H2O.BASW.ZS", 2010)
+```
+```{r}
+boxplot_indicator('SH.H2O.BASW.ZS')
+```
+```{r}
+csv %>%
+  filter(Indicator.Code == "SH.H2O.BASW.ZS") %>%  # Filtra exatamente pelo código
+  pivot_longer(
+    cols = starts_with("X"),      # Transformar anos em formato longo
+    names_to = "Year",
+    values_to = "Value"
+  ) %>%
+  filter(is.na(Value), Year == "X2022")
 ```
 
+-------------------------------------------------------------------------------------
+## Tratamento dos dados
