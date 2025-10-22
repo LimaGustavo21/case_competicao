@@ -40,6 +40,12 @@ series <- read.csv('WDIseries.csv', header = TRUE, stringsAsFactors = FALSE)
 head(country_series)
 ```
 
+```{r}
+  country %>%
+  group_by(Topic) %>%
+  summarise(total_indicators = n()) %>%
+  arrange(desc(total_indicators))
+```
 
 ### Base - Country
 
@@ -49,7 +55,7 @@ head(country_series)
 
 
 ```{r}
-head(country_series)
+head(country)
 ```
 
 ### Base - Series
@@ -327,3 +333,99 @@ csv %>%
 
 -------------------------------------------------------------------------------------
 ## Tratamento dos dados
+
+```{r}
+head(country)
+```
+```{r}
+csv_pivot = csv %>% # 
+  pivot_longer(
+    cols = starts_with("X"),      # Transformar anos em formato longo
+    names_to = "Year",
+    values_to = "Value"
+  ) %>%
+  filter(Year == "X2022")
+```
+```{r}
+head(csv_pivot)
+```
+
+```{r}
+wide_2022 <- csv_pivot %>%
+  select(Country.Code, Indicator.Code, Value) %>%
+  pivot_wider(names_from = Indicator.Code, values_from = Value)
+
+# 3. Remove colunas com todos os valores NA
+wide_2022 <- wide_2022 %>%
+  select(where(~!all(is.na(.))))
+
+# 4. Calcula as correlações com SP.DYN.LE00.IN (Life Expectancy)
+cor_table <- wide_2022 %>%
+  select(where(is.numeric)) %>%
+  cor(use = "pairwise.complete.obs") %>%
+  as.data.frame() %>%
+  mutate(Indicator = rownames(.)) %>%
+  select(Indicator, `SP.DYN.LE00.IN`) %>%
+  arrange(desc(`SP.DYN.LE00.IN`))
+
+# 5. Exibe a tabela ordenada
+print(cor_table)
+```
+```{r}
+series %>%
+  filter(Series.Code == "SH.H2O.BASW.RU.ZS")
+```
+
+```{r}
+df_plot <- csv %>%
+  filter(Indicator.Code %in% c("SP.DYN.LE00.IN", "SH.H2O.BASW.RU.ZS")) %>%
+  select(Country.Code, Indicator.Code, X2022) %>%   # aqui usamos X2022 (não "Value")
+  pivot_wider(names_from = Indicator.Code, values_from = X2022) %>%
+  drop_na(`SP.DYN.LE00.IN`, `SH.H2O.BASW.RU.ZS`)
+
+# 2️⃣ Cria o gráfico
+ggplot(df_plot, aes(x = `SH.H2O.BASW.RU.ZS`, y = `SP.DYN.LE00.IN`)) +
+  geom_point(alpha = 0.7, color = "#2C7BB6") +
+  geom_smooth(method = "lm", se = TRUE, color = "#D7191C") +
+  labs(
+    x = "Crescimento de crédito ao governo (% do M3)",
+    y = "Expectativa de vida ao nascer (anos)",
+    title = "Relação entre Expectativa de Vida e Crédito ao Governo (2022)",
+    subtitle = "Indicadores: SP.DYN.LE00.IN vs SL.EMP.TOTL.SP.MA.NE.ZS"
+  ) +
+  theme_minimal(base_size = 13)
+```
+```{r}
+dados_2022 <- csv %>%
+  select(Country.Name, Country.Code, Indicator.Code, X2022) %>%
+  filter(!is.na(X2022))
+
+# 2️⃣ Filtra os dois indicadores de interesse
+dados_filtrados <- dados_2022 %>%
+  filter(Indicator.Code %in% c("SP.DYN.LE00.IN", "SH.H2O.BASW.RU.ZS"))
+
+# 3️⃣ Transforma os dados em formato largo
+dados_largo <- dados_filtrados %>%
+  pivot_wider(
+    names_from = Indicator.Code,
+    values_from = X2022
+  ) %>%
+  drop_na(SP.DYN.LE00.IN, SH.H2O.BASW.RU.ZS)
+
+# 4️⃣ Calcula a correlação
+correlacao <- cor(dados_largo$SP.DYN.LE00.IN, dados_largo$SH.H2O.BASW.RU.ZS, use = "complete.obs")
+cat("Correlação entre expectativa de vida e acesso à água potável rural:", correlacao, "\n")
+
+# 5️⃣ Cria o gráfico com reta ajustada
+ggplot(dados_largo, aes(x = SH.H2O.BASW.RU.ZS, y = SP.DYN.LE00.IN)) +
+  geom_point(color = "#1f77b4", alpha = 0.7, size = 2) +
+  geom_smooth(method = "lm", se = TRUE, color = "#ff7f0e", linewidth = 1) +
+  labs(
+    title = "Correlação entre Expectativa de Vida e Acesso à Água Potável Rural (2022)",
+    subtitle = paste("Coeficiente de correlação de Pearson:", round(correlacao, 3)),
+    x = "Acesso à Água Potável Rural (% da população rural)",
+    y = "Expectativa de Vida ao Nascer (anos)"
+  ) +
+  theme_minimal(base_size = 13)
+```
+
